@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Location Map</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    </head>
+<body>
+    <div class="container">
+        <h1>Location Map</h1>
+        <form method="post">
+            {{ form.csrf_token }}
+            <div class="form-group">
+                {{ form.location.label }} {{ form.location(class="form-control", value="",id="location-input") }}
+            </div>
+            {{ form.submit(class="btn btn-primary") }}
+        </form>
+        <div id="{{mapID}}">{{ map_html|safe }}</div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+$(document).ready(function() {
+            var map = L.map('{{mapID}}').setView([51.5074, -0.1278], 13);
+            // var map = L.map('{{mapID}}').setView([51.5074, -0.1278], 13);
+            // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                // attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            // }).addTo(map);
+
+            map.on('click', function(e) {
+                var lat = e.latlng.lat;
+                var lon = e.latlng.lng;
+                var location = lat + ', ' + lon;
+                console.log(lat + ','+lon)
+                $.ajax({
+                    url: '/click_location',
+                    type: 'POST',
+                    data: {lat: lat, lon: lon},
+                    success: function(data) {
+						console.log(data.location+'sdjksjkdsjkhfsdjhdfs')
+						console.log(document.getElementById('location-input'))
+                        document.getElementById("location-input").value = data.location.toString();
+                    }
+                });
+            });
+        });
+    </script>
+    <!-- <script>
+        $(document).ready(function() {
+            var map = L.map('map').setView([51.5074, -0.1278], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            map.on('click', function(e) {
+                var lat = e.latlng.lat;
+                var lon = e.latlng.lng;
+
+                $.ajax({
+                    url: '/click_location',
+                    type: 'POST',
+                    data: {lat: lat, lon: lon},
+                    success: function(data) {
+                        $('#location-input').val(data.location);
+                    }
+                });
+            });
+        });
+    </script> -->
+</body>
+</html>
