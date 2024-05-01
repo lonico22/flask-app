@@ -21,6 +21,7 @@ class LocationForm(FlaskForm):
 @app.route('/',methods=['GET', 'POST'])
 def index():
     global mean_location
+    
     form = LocationForm()
     if form.validate_on_submit():
         print('here')

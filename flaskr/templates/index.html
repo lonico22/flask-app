@@ -75,11 +75,15 @@
         };
 
         // Add click event to the map to add a data point to the dataframe
+        var blueMarker = L.AwesomeMarkers.icon({
+            icon: 'coffee',
+            markerColor: 'blue'
+        });
         map.on('click', function(e) {
             if (marker) {
                 map.removeLayer(marker);
             }
-            marker = L.marker(e.latlng).addTo(map);
+            marker = L.marker(e.latlng, {icon: blueMarker}).addTo(map);
             document.getElementById('id_location').value = e.latlng.lat + ', ' + e.latlng.lng;
             
             // Add the clicked data point to the Pandas dataframe
@@ -96,9 +100,7 @@
                 
             });*/
         });
-        let i = 0;
-map.eachLayer(function(){ i += 1; });
-console.log('Map has', i, 'layers.');
+
       
     </script>
 </body>
