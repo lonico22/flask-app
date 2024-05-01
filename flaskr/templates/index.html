@@ -71,7 +71,8 @@
            console.log(loc);
            var spot = loc.split(',');
            console.log(spot);
-           marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
+           marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])], {icon: redMarker}).addTo(map);
+           map.removeLayer(marker);
         };
 
         // Add click event to the map to add a data point to the dataframe
