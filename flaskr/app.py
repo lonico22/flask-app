@@ -56,6 +56,7 @@ def index():
 
 # Update the render_map function in app.py
 def render_map(form, existing_locations, center_point):
+	
     # Create a map with existing markers from the dataframe
     # map = folium.Map(location=center_point, zoom_start=10, tiles="cartodb positron")
     # for location in existing_locations:

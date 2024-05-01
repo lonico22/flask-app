@@ -3,7 +3,10 @@
 <head>
     <title>Flask Folium Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css">
+    
+   <style>
         #map { 
             position: absolute;
             z-index: -1;
@@ -25,10 +28,12 @@
     </form>
     <div id="map"></div>
     
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.0/leaflet.awesome-markers.min.js"></script>
+
     <script>
        
-        
+
     </script>
     <script type="text/javascript">
          var map = L.map('map').setView({{mean_location}}, 2,tiles="cartodb positron");
@@ -39,23 +44,22 @@
         var mapContainer = document.getElementById('map');
     
        var marker;
+   
         
         // Add marker based on the existing locations from the dataframe
         var locations = {{ existing_locations | tojson| safe }};
+        var redMarker = L.AwesomeMarkers.icon({
+            icon: 'coffee',
+            markerColor: 'red'
+        });
         if (locations.length > 0){
-            // locations.forEach(function(location,index) {
-            //     var spot = location.split(',');
-            //     marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
-            //     marker.bindPopup('Name: ' + '{{ names[index] }}' + ', Year: ' + '{{ years[index] }}');
-            // });
+
             {% for local in existing_locations %}
                 var spot = {{local| tojson| safe}}.split(',');
 
-                marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
+                marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])], {icon: redMarker}).addTo(map);
                 marker.bindPopup('Name: ' + '{{ names[loop.index] }}' + ', Year: ' + '{{ years[loop.index] }}');
             {% endfor %}
-
-
 
         }
         // Add marker based on the submitted location
