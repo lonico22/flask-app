@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request,redirect
 import folium
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 
 data_file = "flaskr/static/data/Meteorite_Landings_20240429.csv"
 meteorite_df = pd.read_csv(data_file)
-
+mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
 class LocationForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     year = StringField('Year', validators=[DataRequired()])
@@ -20,28 +20,53 @@ class LocationForm(FlaskForm):
 
 @app.route('/',methods=['GET', 'POST'])
 def index():
+    global mean_location
     form = LocationForm()
     if form.validate_on_submit():
-        location = form.location.data
+        print('here')
+        # Process the form data
         name = form.name.data
         year = form.year.data
-        map = folium.Map(location=[0, 0], zoom_start=2)
-        folium.Marker([0, 0], popup=location).add_to(map)
-        map = map._repr_html_()
+        location = form.location.data
+        lat, lng = location.split(',')
+        lat, lng = float(lat), float(lng)
+        
+		# Add the new data point to the DataFrame
+        new_row = {'name': name, 'year': year, 'reclat': lat, 'reclong': lng}
+        global meteorite_df
+        meteorite_df = pd.concat([meteorite_df, pd.DataFrame([new_row])], ignore_index=True)
+        
+		# Save the updated DataFrame to the CSV file
+        meteorite_df.to_csv(data_file, index=False)
+        
+		# Build map
         existing_locations = meteorite_df[['reclat', 'reclong']].apply(lambda x: ','.join(x.dropna().astype(str)), axis=1).tolist()
-        return render_template('index.html', form=form, map=map, existing_locations=existing_locations, location=location, name=name, year=year)
+        mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
+        map = folium.Map(location = mean_location, zoom_start=10,tiles="cartodb positron")
+        # folium.Marker([0, 0], popup=location).add_to(map)
+        map = map._repr_html_()
+        
+
+        return render_template('index.html', form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, name=name, year=year)
+
     existing_locations = meteorite_df[['reclat', 'reclong']].apply(lambda x: ','.join(x.dropna().astype(str)), axis=1).tolist()
-    return render_map(form, existing_locations)
+    mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
+    return render_map(form, existing_locations, mean_location)
 
-def render_map(form, existing_locations):
+# Update the render_map function in app.py
+def render_map(form, existing_locations, center_point):
     # Create a map with existing markers from the dataframe
-    map = folium.Map(location=[0, 0], zoom_start=2)
-    for location in existing_locations:
-        spot = location.split(',')
-        folium.Marker([float(spot[0]), float(spot[1])]).add_to(map)
-    map_html = map._repr_html_()  # Get the map as HTML
-    return render_template('index.html', form=form, map=map_html, existing_locations=existing_locations, location=None)
+    # map = folium.Map(location=center_point, zoom_start=10, tiles="cartodb positron")
+    # for location in existing_locations:
+    #     spot = location.split(',')
+    #     folium.Marker([float(spot[0]), float(spot[1])],
+    #                   popup=f'Name: {form.name.data} , Year: {form.year.data}',
+    #                   icon=folium.Icon(color="red", icon="info-sign")).add_to(map)
+    # map_html = map._repr_html_()  # Get the map as HTML
+    return render_template('index.html', form=form,  existing_locations=existing_locations, location=None, mean_location=center_point)
 
+def get_center_point(lat,lon):
+    return [lat.mean(), lon.mean()]
 @app.route('/add_data_point', methods=['POST'])
 def add_data_point():
     name = request.form['name']
@@ -50,16 +75,14 @@ def add_data_point():
     lat, lng = location.split(',')
     lat, lng = float(lat), float(lng)
     new_row = {'name': name, 'year': year, 'reclat': lat, 'reclong': lng}
+    global meteorite_df
     meteorite_df = meteorite_df = pd.concat([meteorite_df, new_row], axis=0)
+    
+	 # Save the updated DataFrame to the CSV file
+    meteorite_df.to_csv(data_file, index=False)
 
-    return 'Data point added to the dataframe'
+	# Redirect the user back to the main page
+    return redirect('/')
 
-# @app.route('/map', methods=['POST'])
-# def show_map():
-#     location = request.form['location']
-#     map = folium.Map(location=[0, 0], zoom_start=2)
-#     folium.Marker([0, 0], popup=location).add_to(map)
-#     map.save('templates/map.html')
-#     return render_template('map.html')
 if __name__ == '__main__':
     app.run(debug=True)
