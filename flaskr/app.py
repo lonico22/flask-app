@@ -46,8 +46,9 @@ def index():
         # folium.Marker([0, 0], popup=location).add_to(map)
         map = map._repr_html_()
         
-
-        return render_template('index.html', form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, name=name, year=year)
+        names = meteorite_df['name'].tolist()
+        years = meteorite_df['year'].tolist()
+        return render_template('index.html',  names=names, years=years,form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, name=name, year=year)
 
     existing_locations = meteorite_df[['reclat', 'reclong']].apply(lambda x: ','.join(x.dropna().astype(str)), axis=1).tolist()
     mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
@@ -63,7 +64,10 @@ def render_map(form, existing_locations, center_point):
     #                   popup=f'Name: {form.name.data} , Year: {form.year.data}',
     #                   icon=folium.Icon(color="red", icon="info-sign")).add_to(map)
     # map_html = map._repr_html_()  # Get the map as HTML
-    return render_template('index.html', form=form,  existing_locations=existing_locations, location=None, mean_location=center_point)
+    
+    names = meteorite_df['name'].tolist()
+    years = meteorite_df['year'].tolist()
+    return render_template('index.html', form=form,  names=names, years=years,existing_locations=existing_locations, location=None, mean_location=center_point)
 
 def get_center_point(lat,lon):
     return [lat.mean(), lon.mean()]

@@ -43,11 +43,20 @@
         // Add marker based on the existing locations from the dataframe
         var locations = {{ existing_locations | tojson| safe }};
         if (locations.length > 0){
-            locations.forEach(function(location) {
-                var spot = location.split(',');
+            // locations.forEach(function(location,index) {
+            //     var spot = location.split(',');
+            //     marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
+            //     marker.bindPopup('Name: ' + '{{ names[index] }}' + ', Year: ' + '{{ years[index] }}');
+            // });
+            {% for local in existing_locations %}
+                var spot = {{local| tojson| safe}}.split(',');
+
                 marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
-                marker.bindPopup("Name: {{form.name.data}} , Year: {{form.year.data}}").openPopup();
-            });
+                marker.bindPopup('Name: ' + '{{ names[loop.index] }}' + ', Year: ' + '{{ years[loop.index] }}');
+            {% endfor %}
+
+
+
         }
         // Add marker based on the submitted location
         console.log("jkfsdklj")
