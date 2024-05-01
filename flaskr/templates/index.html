@@ -1,72 +1,83 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Location Map</title>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    </head>
+<head>
+    <title>Flask Folium Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map { height: 400px; }
+    </style>
+</head>
 <body>
-    <div class="container">
-        <h1>Location Map</h1>
-        <form method="post">
-            {{ form.csrf_token }}
-            <div class="form-group">
-                {{ form.location.label }} {{ form.location(class="form-control", value="",id="location-input") }}
-            </div>
-            {{ form.submit(class="btn btn-primary") }}
-        </form>
-        <div id="{{mapID}}">{{ map_html|safe }}</div>
-    </div>
+    <h1>Enter location:</h1>
+    <form method="post" id="locationForm">
+        {{ form.hidden_tag() }}
+        {{ form.name.label }} {{ form.name(size=32, id="id_name") }}
+        {{ form.year.label }} {{ form.year(size=32, id="id_year") }}
+        {{ form.location.label }} {{ form.location(size=32, id="id_location") }}
+        {{ form.submit() }}
+    </form>
+    <div id="map"></div>
+    
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
     <script>
-$(document).ready(function() {
-            var map = L.map('{{mapID}}').setView([51.5074, -0.1278], 13);
-            // var map = L.map('{{mapID}}').setView([51.5074, -0.1278], 13);
-            // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                // attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            // }).addTo(map);
-
-            map.on('click', function(e) {
-                var lat = e.latlng.lat;
-                var lon = e.latlng.lng;
-                var location = lat + ', ' + lon;
-                console.log(lat + ','+lon)
-                $.ajax({
-                    url: '/click_location',
-                    type: 'POST',
-                    data: {lat: lat, lon: lon},
-                    success: function(data) {
-						console.log(data.location+'sdjksjkdsjkhfsdjhdfs')
-						console.log(document.getElementById('location-input'))
-                        document.getElementById("location-input").value = data.location.toString();
-                    }
-                });
-            });
-        });
+       
+        
     </script>
-    <!-- <script>
-        $(document).ready(function() {
-            var map = L.map('map').setView([51.5074, -0.1278], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+    <script type="text/javascript">
+         var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
 
-            map.on('click', function(e) {
-                var lat = e.latlng.lat;
-                var lon = e.latlng.lng;
-
-                $.ajax({
-                    url: '/click_location',
-                    type: 'POST',
-                    data: {lat: lat, lon: lon},
-                    success: function(data) {
-                        $('#location-input').val(data.location);
-                    }
-                });
+        var mapContainer = document.getElementById('map');
+    
+       var marker;
+        
+        // Add marker based on the existing locations from the dataframe
+        var locations = {{ existing_locations | tojson| safe }};
+        if (locations.length > 0){
+            locations.forEach(function(location) {
+                var spot = location.split(',');
+                marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
             });
+        }
+
+        // Add marker based on the submitted location
+        console.log("jkfsdklj")
+        var loc = {{location | tojson| safe }};
+        console.log(loc);
+
+        if (loc !== null){
+           console.log(loc);
+           var spot = loc.split(',');
+           console.log(spot);
+           marker = L.marker([parseFloat(spot[0]), parseFloat(spot[1])]).addTo(map);
+        };
+
+        // Add click event to the map to add a data point to the dataframe
+        map.on('click', function(e) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker(e.latlng).addTo(map);
+            document.getElementById('id_location').value = e.latlng.lat + ', ' + e.latlng.lng;
+            
+            // Add the clicked data point to the Pandas dataframe
+            /*var newLocation = e.latlng.lat + ', ' + e.latlng.lng;
+             var newName = prompt("Enter the name of the meteorite:");
+            var newYear = prompt("Enter the year of the meteorite:");
+            $.ajax({
+                type: "POST",
+                url: "/add_data_point",
+                data: {name: newName, year: newYear, location: newLocation},
+                success: function(response) {
+                    alert('Data point added to the dataframe');
+                } 
+                
+            });*/
         });
-    </script> -->
+
+      
+    </script>
 </body>
 </html>
