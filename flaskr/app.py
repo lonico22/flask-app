@@ -13,10 +13,10 @@ data_file = "flaskr/static/data/Meteorite_Landings_20240429.csv"
 meteorite_df = pd.read_csv(data_file)
 mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
 class LocationForm(FlaskForm):
-    name = StringField('Name', validators=[DataRequired()])
-    year = StringField('Year', validators=[DataRequired()])
-    location = StringField('Location', validators=[DataRequired()])
-    submit = SubmitField('Show Map')
+    name = StringField('Name:', validators=[DataRequired()])
+    year = StringField('Year:', validators=[DataRequired()])
+    location = StringField('Location:', validators=[DataRequired()])
+    submit = SubmitField('Submit')
 
 @app.route('/',methods=['GET', 'POST'])
 def index():
