@@ -114,13 +114,19 @@
         };
 
         // Add click event to the map to add a data point to the dataframe
+        var myOffcanvas = document.getElementById('form-wrapper')
+
         map.on('click', function(e) {
             if (marker) {
                 map.removeLayer(marker);
             }
             marker = L.circleMarker(e.latlng, blueCircle).addTo(map);
+            map.setView(e.latlng,10);
             document.getElementById('id_location').value = e.latlng.lat + ', ' + e.latlng.lng;
-            
+            var bsOffcanvas = new bootstrap.Offcanvas(myOffcanvas)
+            bsOffcanvas.show()
+            toggleBtn()
+
             // Add the clicked data point to the Pandas dataframe
             /*var newLocation = e.latlng.lat + ', ' + e.latlng.lng;
              var newName = prompt("Enter the name of the meteorite:");
