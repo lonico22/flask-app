@@ -1,9 +1,15 @@
-from flask import Flask, render_template, request,redirect
+from flask import Flask, render_template, request,redirect, jsonify, request
 import folium
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import StringField,SelectField, SubmitField, TextAreaField, DateTimeField, HiddenField
+from wtforms.validators import DataRequired, InputRequired
+from wtforms.widgets import TextArea
 import pandas as pd
+from datetime import datetime
+import pytz
+from tzlocal import get_localzone
+
+
 
 
 app = Flask(__name__)
@@ -12,28 +18,55 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 data_file = "flaskr/static/data/Meteorite_Landings_20240429.csv"
 meteorite_df = pd.read_csv(data_file)
 mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
+tz = get_localzone()
 class LocationForm(FlaskForm):
-    name = StringField('Name:', validators=[DataRequired()])
-    year = StringField('Year:', validators=[DataRequired()])
-    location = StringField('Location:', validators=[DataRequired()])
+    datetime_field = HiddenField('Datetime', default = datetime.today, validators=[DataRequired()])
+    timezone = SelectField('Timezone', choices=[(tz, tz) for tz in pytz.common_timezones], default=tz.key)
+    location = StringField('Location', validators=[DataRequired()])
+    # datetime_field = DateTimeField('Datetime (UTC)', validators=[DataRequired()], format='%Y-%m-%d %H:%M:%S %Z%z')
+    itemone = StringField('Item 1', validators=[DataRequired()])
+    itemtwo = StringField('Item 2', validators=[DataRequired()])
+    itemthree = StringField('Item 3', validators=[DataRequired()])
+    itemfour = StringField('Item 4')
+    itemfive = TextAreaField('Item 5', widget=TextArea())
+    itemsix = StringField('Item 6');
+    new_input = StringField('New Input', render_kw={'multiple': True})
     submit = SubmitField('Submit')
 
 @app.route('/',methods=['GET', 'POST'])
 def index():
     global mean_location
-    
+    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     form = LocationForm()
     if form.validate_on_submit():
+
         print('here')
+        # # Get the datetime object from the form
+        # dt = form.datetime_field.data
+        # # Set the timezone to UTC
+        # dt_utc = dt.astimezone(pytz.UTC)
+        # # Do something with the datetime object
+        # print(dt_utc)
+
+        timezone = form.timezone.data
+        # Do something with the timezone
+        print(f'Timezone: {timezone}')
+        # Get the datetime and timezone from the form
+        dt = form.datetime_field.data
+        tz = form.timezone_field.data
+        # Do something with the datetime and timezone
+        print(dt, tz)
+
         # Process the form data
-        name = form.name.data
-        year = form.year.data
+        itemtwo = form.itemtwo.data
+        itemone = form.itemone.data
+        new_inputs = request.form.getlist('new_input')  # Access the new input values here
         location = form.location.data
         lat, lng = location.split(',')
         lat, lng = float(lat), float(lng)
-        
+        app.logger.info(new_inputs)
 		# Add the new data point to the DataFrame
-        new_row = {'name': name, 'year': year, 'reclat': lat, 'reclong': lng}
+        new_row = {'itemone': itemone, 'year': itemtwo, 'reclat': lat, 'reclong': lng}
         global meteorite_df
         meteorite_df = pd.concat([meteorite_df, pd.DataFrame([new_row])], ignore_index=True)
         
@@ -47,9 +80,9 @@ def index():
         # folium.Marker([0, 0], popup=location).add_to(map)
         map = map._repr_html_()
         
-        names = meteorite_df['name'].tolist()
+        itemones = meteorite_df['name'].tolist()
         years = meteorite_df['year'].tolist()
-        return render_template('index.html',  names=names, years=years,form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, name=name, year=year)
+        return render_template('index.html',  curdatetime = current_datetime, itemones=itemones, year=itemtwo,form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, itemone=itemone)
 
     existing_locations = meteorite_df[['reclat', 'reclong']].apply(lambda x: ','.join(x.dropna().astype(str)), axis=1).tolist()
     mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
@@ -63,24 +96,24 @@ def render_map(form, existing_locations, center_point):
     # for location in existing_locations:
     #     spot = location.split(',')
     #     folium.Marker([float(spot[0]), float(spot[1])],
-    #                   popup=f'Name: {form.name.data} , Year: {form.year.data}',
+    #                   popup=f'itemone: {form.itemone.data} , Year: {form.year.data}',
     #                   icon=folium.Icon(color="red", icon="info-sign")).add_to(map)
     # map_html = map._repr_html_()  # Get the map as HTML
     
-    names = meteorite_df['name'].tolist()
-    years = meteorite_df['year'].tolist()
-    return render_template('index.html', form=form,  names=names, years=years,existing_locations=existing_locations, location=None, mean_location=center_point)
+    itemones = meteorite_df['name'].tolist()
+    itemtwo = meteorite_df['year'].tolist()
+    return render_template('index.html', form=form,  itemones=itemones, year=itemtwo,existing_locations=existing_locations, location=None, mean_location=center_point)
 
 def get_center_point(lat,lon):
     return [lat.mean(), lon.mean()]
 @app.route('/add_data_point', methods=['POST'])
 def add_data_point():
-    name = request.form['name']
-    year = request.form['year']
+    itemone = request.form['itemone']
+    itemtwo = request.form['year']
     location = request.form['location']
     lat, lng = location.split(',')
     lat, lng = float(lat), float(lng)
-    new_row = {'name': name, 'year': year, 'reclat': lat, 'reclong': lng}
+    new_row = {'name': itemone, 'year': itemtwo, 'reclat': lat, 'reclong': lng}
     global meteorite_df
     meteorite_df = meteorite_df = pd.concat([meteorite_df, new_row], axis=0)
     
@@ -89,6 +122,13 @@ def add_data_point():
 
 	# Redirect the user back to the main page
     return redirect('/')
+
+@app.route('/get-timezones', methods=['GET'])
+def get_timezones():
+    # Return a list of timezones in JSON format
+    timezones = pytz.common_timezones
+    return jsonify(timezones)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
