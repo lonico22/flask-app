@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import datetime
 import pytz
 from tzlocal import get_localzone
-
+import logging
 
 
 
@@ -18,7 +18,12 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 data_file = "flaskr/static/data/Meteorite_Landings_20240429.csv"
 meteorite_df = pd.read_csv(data_file)
 mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
+categories = ['all','aaaaa','bbb','ccc','dddd','eee','fff']
 tz = get_localzone()
+
+map = folium.Map(location = [0,0], zoom_start=10,tiles="cartodb positron")
+
+
 class LocationForm(FlaskForm):
     datetime_field = HiddenField('Datetime', default = datetime.today, validators=[DataRequired()])
     timezone = SelectField('Timezone', choices=[(tz, tz) for tz in pytz.common_timezones], default=tz.key)
@@ -82,7 +87,14 @@ def index():
         
         itemones = meteorite_df['name'].tolist()
         years = meteorite_df['year'].tolist()
-        return render_template('index.html',  curdatetime = current_datetime, itemones=itemones, year=itemtwo,form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, itemone=itemone)
+        return render_template('index.html', categories =categories, curdatetime = current_datetime, itemones=itemones, year=itemtwo,form=form, map=map, existing_locations=existing_locations, mean_location = mean_location, location=location, itemone=itemone)
+
+    # if request.method == 'POST':
+    #     category = request.form['category']
+    #     app.logger.info(category)
+    #     map = update_map(category)
+    # else:
+    #     map = update_map('all')  # Default category
 
     existing_locations = meteorite_df[['reclat', 'reclong']].apply(lambda x: ','.join(x.dropna().astype(str)), axis=1).tolist()
     mean_location = [meteorite_df.reclat.mean(), meteorite_df.reclong.mean()]
@@ -102,10 +114,32 @@ def render_map(form, existing_locations, center_point):
     
     itemones = meteorite_df['name'].tolist()
     itemtwo = meteorite_df['year'].tolist()
-    return render_template('index.html', form=form,  itemones=itemones, year=itemtwo,existing_locations=existing_locations, location=None, mean_location=center_point)
-
+    return render_template('index.html', form=form, categories =categories, itemones=itemones, year=itemtwo,existing_locations=existing_locations, location=None, mean_location=center_point)
+# Function to filter data and update Folium map
+# def update_map(category):
+#     if category == 'all':
+#         filtered_data = meteorite_df
+#     else:
+#         filtered_data = meteorite_df[meteorite_df['category'] == category]
+#     # map.clear_layers()
+#     print(len(filtered_data))
+#     map_data = filtered_data[['reclat', 'reclong', 'name']].to_dict(orient='records')
+#     return jsonify(map_data)
 def get_center_point(lat,lon):
     return [lat.mean(), lon.mean()]
+
+@app.route('/update_map', methods=['POST'])
+def update_map():
+    category = request.form.get('category')
+    if category == 'all':
+        filtered_data = meteorite_df
+    else:
+        filtered_data = meteorite_df[meteorite_df['category'] == category]
+    
+    filtered_data['name'] = filtered_data['name'].fillna('').astype(str)
+
+    map_data = filtered_data[['reclat', 'reclong', 'name']].to_dict(orient='records')
+    return jsonify(map_data)
 @app.route('/add_data_point', methods=['POST'])
 def add_data_point():
     itemone = request.form['itemone']
@@ -128,6 +162,7 @@ def get_timezones():
     # Return a list of timezones in JSON format
     timezones = pytz.common_timezones
     return jsonify(timezones)
+
 
 
 if __name__ == '__main__':

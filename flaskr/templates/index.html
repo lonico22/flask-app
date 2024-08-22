@@ -49,6 +49,12 @@
             </div>
         </div>
     </div>
+    <!-- Filter -->
+    <select id="category" name="category">
+        {% for category in categories %}
+        <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+    </select>
     <!-- form -->
     <div id="form-wrapper" class="form-wrapper offcanvas offcanvas-end ">
         <div class="offcanvas-header">
@@ -128,7 +134,7 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js"></script>
 
-
+   
         <script>
             $(document).ready(function () {
                 $('#datetime').datetimepicker({
@@ -153,6 +159,7 @@
       });
             });
         </script>
+
 <script type="text/javascript">
     var firstClick = true;
 
@@ -269,6 +276,31 @@
             });*/
         });
 
+
+    
+        const categorySelect = document.getElementById('category');
+categorySelect.addEventListener('change', (e) => {
+    const category = e.target.value;
+    fetch('/update_map', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `category=${category}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove existing markers from the map
+        map.eachLayer(function (layer) {
+         if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+                map.removeLayer(layer);
+            }
+        });
+        // Add new markers to the map
+        data.forEach(item => {
+            L.marker([item.reclat, item.reclong]).addTo(map)
+                .bindPopup(item.name);
+        });
+    });
+});
 
     </script>
 </body>
