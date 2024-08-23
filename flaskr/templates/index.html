@@ -62,8 +62,9 @@
             <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas"
                 aria-label="Close" onclick="toggleBtn()"></button>
         </div>
-        <form method="POST" id="locationForm">
+        <form  id="locationForm">
             {{ form.hidden_tag() }}
+    <input id="hidden_category" type="hidden" name="category" value="All">
             <div class="sec-general">
                 <div class="input-group date" id="datetime" data-target-input="nearest">
                     <input type="text" class="form-control datetimepicker-input" data-target="#datetime" >
@@ -149,8 +150,10 @@
                 //     data: '/get-timezones'
                 // });
                 $('#datetime').on('change.datetimepicker', function (e) {
-                    $('#datetime-field').val(e.date.format('YYYY-MM-DD HH:mm:ss ZZ'));
-                });
+    var datetime = moment(e.date).format('YYYY-MM-DD HH:mm:ss ZZ');
+    $('#datetime-field').val(datetime);
+});
+
                 $('#timezone').on('change', function() {
         var timezone = $(this).val();
         var datetime = $('#datetime').data('datetimepicker').date();
@@ -280,7 +283,8 @@
     
         const categorySelect = document.getElementById('category');
 categorySelect.addEventListener('change', (e) => {
-    const category = e.target.value;
+    category = e.target.value;
+    $('#hidden_category').val(category);
     fetch('/update_map', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -288,6 +292,32 @@ categorySelect.addEventListener('change', (e) => {
     })
     .then(response => response.json())
     .then(data => {
+        // Remove existing markers from the map
+        map.eachLayer(function (layer) {
+         if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+                map.removeLayer(layer);
+            }
+        });
+        // Add new markers to the map
+        data.forEach(item => {
+            L.marker([item.reclat, item.reclong]).addTo(map)
+                .bindPopup(item.name);
+        });
+    });
+});
+
+const form = document.getElementById('locationForm');
+form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const category = formData.get('category');
+    fetch('/submit_form', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data)
         // Remove existing markers from the map
         map.eachLayer(function (layer) {
          if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {

@@ -33,6 +33,7 @@ class LocationForm(FlaskForm):
     itemtwo = StringField('Item 2', validators=[DataRequired()])
     itemthree = StringField('Item 3', validators=[DataRequired()])
     itemfour = StringField('Item 4')
+    
     itemfive = TextAreaField('Item 5', widget=TextArea())
     itemsix = StringField('Item 6');
     new_input = StringField('New Input', render_kw={'multiple': True})
@@ -41,6 +42,8 @@ class LocationForm(FlaskForm):
 @app.route('/',methods=['GET', 'POST'])
 def index():
     global mean_location
+    category = request.form.get('category')
+
     current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     form = LocationForm()
     if form.validate_on_submit():
@@ -58,7 +61,7 @@ def index():
         print(f'Timezone: {timezone}')
         # Get the datetime and timezone from the form
         dt = form.datetime_field.data
-        tz = form.timezone_field.data
+        tz = form.timezone.data
         # Do something with the datetime and timezone
         print(dt, tz)
 
@@ -136,26 +139,40 @@ def update_map():
     else:
         filtered_data = meteorite_df[meteorite_df['category'] == category]
     
-    filtered_data['name'] = filtered_data['name'].fillna('').astype(str)
-
+    filtered_data.loc[:, 'name'] = filtered_data['name'].fillna('').astype(str)
     map_data = filtered_data[['reclat', 'reclong', 'name']].to_dict(orient='records')
     return jsonify(map_data)
-@app.route('/add_data_point', methods=['POST'])
-def add_data_point():
-    itemone = request.form['itemone']
-    itemtwo = request.form['year']
-    location = request.form['location']
+
+@app.route('/submit_form', methods=['POST'])
+def submit_form():
+    # Process the form data
+    itemtwo = request.form.get('itemtwo')
+    itemone = request.form.get('itemone')
+    new_inputs = request.form.getlist('new_input')
+    location = request.form.get('location')
     lat, lng = location.split(',')
     lat, lng = float(lat), float(lng)
-    new_row = {'name': itemone, 'year': itemtwo, 'reclat': lat, 'reclong': lng}
+
+    # Add the new data point to the DataFrame
+    new_row = {'itemone': itemone, 'year': itemtwo, 'reclat': lat, 'reclong': lng}
     global meteorite_df
-    meteorite_df = meteorite_df = pd.concat([meteorite_df, new_row], axis=0)
-    
-	 # Save the updated DataFrame to the CSV file
+    meteorite_df = pd.concat([meteorite_df, pd.DataFrame([new_row])], ignore_index=True)
+
+    # Save the updated DataFrame to the CSV file
     meteorite_df.to_csv(data_file, index=False)
 
-	# Redirect the user back to the main page
-    return redirect('/')
+    # Filter the data frame based on the current category
+    category = request.form.get('category', 'all')
+    app.logger.info(request.form)
+    if category == 'all':
+        filtered_data = meteorite_df
+    else:
+        filtered_data = meteorite_df[meteorite_df['category'] == category]
+
+    # Prepare the filtered data for the map
+    map_data = filtered_data[['reclat', 'reclong', 'name']].to_dict(orient='records')
+    app.logger.info(map_data)
+    return jsonify(map_data)
 
 @app.route('/get-timezones', methods=['GET'])
 def get_timezones():
